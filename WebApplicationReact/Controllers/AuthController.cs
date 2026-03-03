@@ -8,16 +8,9 @@ namespace WebApplicationReact.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController : ControllerBase
+    public class AuthController(IAuthService authService) : ControllerBase
     {
-        private readonly IAuthService _authService;
-        
-
-        public AuthController(IAuthService authService)
-        {
-            _authService = authService;
-
-        }
+        private readonly IAuthService _authService = authService;
 
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterRequest request)
@@ -45,17 +38,55 @@ namespace WebApplicationReact.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
-            var response = await _authService.LoginAsync(request);
-
-            Response.Cookies.Append("jwtToken", response.Token, new CookieOptions
+            try
             {
-                HttpOnly = true,          
-                Secure = true,            
-                SameSite = SameSiteMode.None,
-                Expires = DateTime.UtcNow.AddHours(1)
-            });
+                var response = await _authService.LoginAsync(request);
 
-            return Ok(new { role = response.Role });
+                Response.Cookies.Append("jwtToken", response.Token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Expires = DateTime.UtcNow.AddHours(1)
+                });
+                return Ok(new { role = response.Role });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
         }
+
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            try
+            {
+                Response.Cookies.Delete("jwtToken", new CookieOptions
+                {
+                    Secure = true,
+                    SameSite = SameSiteMode.None
+                });
+
+                return Ok(new
+                {
+                    message = "Logged out successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
+
+        }
+
     }
 }

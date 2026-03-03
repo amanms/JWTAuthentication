@@ -19,7 +19,7 @@ namespace WebApplicationReact.Services
         public AuthService(IUserRepository repository, JwtTokenGenerator jwt)
         {
             _repository = repository;
-            _jwt = jwt;
+            _jwt = jwt;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
         }
 
         public async Task RegisterAsync(RegisterRequest request)

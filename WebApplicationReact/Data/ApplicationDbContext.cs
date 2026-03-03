@@ -3,13 +3,8 @@ using WebApplicationReact.Models.Entities;
 
 namespace WebApplicationReact.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext(DbContextOptions options) : DbContext(options)
     {
-        public ApplicationDbContext(DbContextOptions options)
-            : base(options)
-        {
-        }
-
         public DbSet<User> Users { get; set; }
     }
 }
