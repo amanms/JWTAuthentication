@@ -21,13 +21,7 @@ namespace WebApplicationReact.Services
 
         public async Task<List<UserDetail>> GetUsersAsync()
         {
-            var users = await _repository.GetAllAsync();
-
-            return users.Select(u => new UserDetail
-            {
-                Name = u.UserName,
-                Email = u.UserEmail
-            }).ToList();
+            return await _repository.GetAllAsync();
         }
     }
 }

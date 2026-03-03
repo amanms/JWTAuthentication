@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using WebApplicationReact.Data;
+using WebApplicationReact.Models.DTOs;
 using WebApplicationReact.Models.Entities;
 using WebApplicationReact.Repositories.Interfaces;
 
@@ -25,9 +26,13 @@ namespace WebApplicationReact.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<User>> GetAllAsync()
+        public async Task<List<UserDetail>> GetAllAsync()
         {
-            return await _context.Users.ToListAsync();
+            return await _context.Users.Select(u => new UserDetail
+            {
+                Name = u.UserName,
+                Email = u.UserEmail,
+            }).ToListAsync();
         }
     }
 }
