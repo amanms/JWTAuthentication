@@ -2,17 +2,12 @@
 {
     public class User
     {
-        
+        [key]
         public int UserId { get; set; }
-        required
-        public string UserName { get; set; }
-        required
-        public string UserEmail { get; set; }
-        required
-        public string PasswordHash { get; set; } 
-        required
-        public string PasswordSalt { get; set; }
-
+        public required string UserName { get; set; }
+        public required string UserEmail { get; set; }
+        public required string PasswordHash { get; set; } 
+        public required string PasswordSalt { get; set; }
         public string? UserRole { get; set; }
     }
 }
