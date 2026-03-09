@@ -8,14 +8,32 @@ using System.Text;
 using WebApplicationReact.Data;
 using WebApplicationReact.Helpers;
 using WebApplicationReact.Middleware;
+using WebApplicationReact.Models.Responses;
 using WebApplicationReact.Repositories;
 using WebApplicationReact.Repositories.Interfaces;
 using WebApplicationReact.Services;
 using WebApplicationReact.Services.Interfaces;
 using WebApplicationReact.Validators;
-using WebApplicationReact.Models.Responses;
+using Serilog;
+using Serilog.Events;
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.File(
+        "Logs/success-.txt",
+        rollingInterval: RollingInterval.Day,
+        restrictedToMinimumLevel: LogEventLevel.Information)
+    .WriteTo.File(
+        "Logs/error-.txt",
+        rollingInterval: RollingInterval.Day,
+        restrictedToMinimumLevel: LogEventLevel.Error)
+
+    .CreateLogger();
+
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog();
 
 builder.Services.AddControllers();
 
