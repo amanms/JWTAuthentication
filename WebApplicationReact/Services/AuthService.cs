@@ -1,13 +1,11 @@
-﻿using Azure.Core;
-using System.Data.SqlTypes;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using WebApplicationReact.Helpers;
 using WebApplicationReact.Models.DTOs;
 using WebApplicationReact.Models.Entities;
+using WebApplicationReact.Models.Responses;
 using WebApplicationReact.Repositories.Interfaces;
 using WebApplicationReact.Services.Interfaces;
-
 
 namespace WebApplicationReact.Services
 {
@@ -19,16 +17,22 @@ namespace WebApplicationReact.Services
         public AuthService(IUserRepository repository, JwtTokenGenerator jwt)
         {
             _repository = repository;
-            _jwt = jwt;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+            _jwt = jwt;
         }
 
-        public async Task RegisterAsync(RegisterRequest request)
+        public async Task<ApiResponse<object>> RegisterAsync(RegisterRequest request)
         {
-            var existingUser =
-                await _repository.GetByEmailAsync(request.Email);
+            var existingUser = await _repository.GetByEmailAsync(request.Email);
 
             if (existingUser != null)
-                throw new Exception("User already exists");
+            {
+                return new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "User already exists",
+                    Data = null
+                };
+            }
 
             CreatePasswordHash(request.Password, out string hash, out string salt);
 
@@ -42,26 +46,28 @@ namespace WebApplicationReact.Services
             };
 
             await _repository.AddAsync(user);
-        }
 
-        private void CreatePasswordHash(string password, out string passwordHash, out string passwordSalt)
-        {
-            using (var hmac = new HMACSHA512())
+            return new ApiResponse<object>
             {
-                byte[] saltBytes = hmac.Key; // automatically generated salt
-                byte[] hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
-
-                passwordSalt = Convert.ToBase64String(saltBytes);
-                passwordHash = Convert.ToBase64String(hashBytes);
-            }
+                Success = true,
+                Message = "User registered successfully",
+                Data = null
+            };
         }
 
-        public async Task<AuthResponse> LoginAsync(LoginRequest request)
+        public async Task<ApiResponse<AuthResponse>> LoginAsync(LoginRequest request)
         {
             var user = await _repository.GetByEmailAsync(request.Email);
 
             if (user == null)
-                throw new Exception("Invalid credentials");
+            {
+                return new ApiResponse<AuthResponse>
+                {
+                    Success = false,
+                    Message = "Invalid credentials",
+                    Data = null
+                };
+            }
 
             bool validPassword = VerifyPasswordHash(
                 request.Password,
@@ -70,30 +76,50 @@ namespace WebApplicationReact.Services
             );
 
             if (!validPassword)
-                throw new Exception("Invalid credentials");
+            {
+                return new ApiResponse<AuthResponse>
+                {
+                    Success = false,
+                    Message = "Invalid credentials",
+                    Data = null
+                };
+            }
 
             var token = _jwt.GenerateToken(user);
 
-            return new AuthResponse
+            return new ApiResponse<AuthResponse>
             {
-                Token = token,
-                Role = user.UserRole
+                Success = true,
+                Message = "Login successful",
+                Data = new AuthResponse
+                {
+                    Token = token,
+                    Role = user.UserRole
+                }
             };
+        }
 
+        private void CreatePasswordHash(string password, out string passwordHash, out string passwordSalt)
+        {
+            using var hmac = new HMACSHA512();
+
+            byte[] saltBytes = hmac.Key;
+            byte[] hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
+
+            passwordSalt = Convert.ToBase64String(saltBytes);
+            passwordHash = Convert.ToBase64String(hashBytes);
         }
 
         private bool VerifyPasswordHash(string password, string storedHash, string storedSalt)
         {
             byte[] saltBytes = Convert.FromBase64String(storedSalt);
 
-            using (var hmac = new HMACSHA512(saltBytes))
-            {
-                byte[] computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
-                string computedHashString = Convert.ToBase64String(computedHash);
+            using var hmac = new HMACSHA512(saltBytes);
 
-                return computedHashString == storedHash;
-            }
+            byte[] computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
+            string computedHashString = Convert.ToBase64String(computedHash);
+
+            return computedHashString == storedHash;
         }
     }
-
 }

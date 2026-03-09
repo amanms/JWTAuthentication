@@ -1,9 +1,10 @@
 ﻿using WebApplicationReact.Models.DTOs;
+using WebApplicationReact.Models.Responses;
 
 namespace WebApplicationReact.Services.Interfaces
 {
     public interface IUserService
     {
-        Task<List<UserDetail>> GetUsersAsync();
+        Task<ApiResponse<List<UserDetail>>> GetUsersAsync();
     }
 }

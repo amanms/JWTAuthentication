@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using WebApplicationReact.Models.DTOs;
+using WebApplicationReact.Models.Responses;
 using WebApplicationReact.Services.Interfaces;
 
 namespace WebApplicationReact.Controllers
@@ -13,10 +14,14 @@ namespace WebApplicationReact.Controllers
 
         [Authorize]
         [HttpGet]
-        public async Task<IActionResult> GetUsers()
+        public async Task<ActionResult<ApiResponse<List<UserDetail>>>> GetUsers()
         {
-            var users = await _userService.GetUsersAsync();
-            return Ok(users);
+            var result = await _userService.GetUsersAsync();
+
+            if (!result.Success)
+                return NotFound(result);
+
+            return Ok(result);
         }
     }
 }
