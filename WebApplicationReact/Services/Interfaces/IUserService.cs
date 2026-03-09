@@ -5,6 +5,6 @@ namespace WebApplicationReact.Services.Interfaces
 {
     public interface IUserService
     {
-        Task<ApiResponse<List<UserDetail>>> GetUsersAsync();
+        Task<ApiResponse<List<UserDetail>>> GetUsersAsync(int pageNumber, int pageSize);
     }
 }

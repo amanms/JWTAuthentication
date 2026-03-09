@@ -14,9 +14,9 @@ namespace WebApplicationReact.Controllers
 
         [Authorize]
         [HttpGet]
-        public async Task<ActionResult<ApiResponse<List<UserDetail>>>> GetUsers()
+        public async Task<ActionResult<ApiResponse<List<UserDetail>>>> GetUsers(int pageNumber = 1,int pageSize = 10)
         {
-            var result = await _userService.GetUsersAsync();
+            var result = await _userService.GetUsersAsync(pageNumber, pageSize);
 
             if (!result.Success)
                 return NotFound(result);
