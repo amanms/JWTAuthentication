@@ -19,6 +19,7 @@ namespace WebApplicationReact.Helpers
         {
             var claims = new[]
             {
+            new Claim("UserId", user.UserId.ToString()),
             new Claim(ClaimTypes.Name, user.UserEmail),
             new Claim(ClaimTypes.Role, user.UserRole)
         };
