@@ -26,13 +26,19 @@ namespace WebApplicationReact.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<UserDetail>> GetAllAsync()
+        public async Task<List<UserDetail>> GetUsersAsync(int pageNumber, int pageSize)
         {
-            return await _context.Users.Select(u => new UserDetail
-            {
-                Name = u.UserName,
-                Email = u.UserEmail,
-            }).ToListAsync();
+            return await _context.Users
+                .Select(u => new UserDetail
+                {
+                    UserId = u.UserId,
+                    Name = u.UserName,
+                    Email = u.UserEmail,
+                    UserRole = u.UserRole
+                })
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
         }
     }
 }

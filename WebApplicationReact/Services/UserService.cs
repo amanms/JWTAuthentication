@@ -1,4 +1,4 @@
-﻿using WebApplicationReact.Models.DTOs;
+using WebApplicationReact.Models.DTOs;
 using WebApplicationReact.Models.Responses;
 using WebApplicationReact.Repositories.Interfaces;
 using WebApplicationReact.Services.Interfaces;
@@ -14,9 +14,17 @@ namespace WebApplicationReact.Services
             _repository = repository;
         }
 
-        public async Task<ApiResponse<List<UserDetail>>> GetUsersAsync()
+        public async Task<ApiResponse<List<UserDetail>>> GetUsersAsync(int pageNumber, int pageSize)
         {
-            var users = await _repository.GetAllAsync();
+            if (pageNumber <= 0)
+                pageNumber = 1;
+
+            if (pageSize <= 0)
+                pageSize = 10;
+
+            pageSize = Math.Min(pageSize, 50);
+
+            var users = await _repository.GetUsersAsync(pageNumber, pageSize);
 
             if (users == null || users.Count == 0)
             {

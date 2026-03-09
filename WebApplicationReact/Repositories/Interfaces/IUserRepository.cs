@@ -9,6 +9,6 @@ namespace WebApplicationReact.Repositories.Interfaces
         Task<User> GetByEmailAsync(string email);
         Task AddAsync(User user);
 
-        Task<List<UserDetail>> GetAllAsync();
+        Task<List<UserDetail>> GetUsersAsync(int pageNumber, int pageSize);
     }
 }
