@@ -28,7 +28,7 @@ namespace WebApplicationReact.Repositories
 
         public async Task<List<UserDetail>> GetUsersAsync(int pageNumber, int pageSize)
         {
-            return await _context.Users
+            return await _context.Users.AsNoTracking()
                 .Select(u => new UserDetail
                 {
                     UserId = u.UserId,
