@@ -1,16 +1,11 @@
-﻿using Azure.Core;
-using System.Data.SqlTypes;
-using System.Security.Cryptography;
-using System.Text;
-using WebApplicationReact.Helpers;
-using WebApplicationReact.Models.DTOs;
-using WebApplicationReact.Models.Entities;
+﻿using WebApplicationReact.Models.DTOs;
+using WebApplicationReact.Models.Responses;
 using WebApplicationReact.Repositories.Interfaces;
 using WebApplicationReact.Services.Interfaces;
 
 namespace WebApplicationReact.Services
 {
-    public class UserService:IUserService
+    public class UserService : IUserService
     {
         private readonly IUserRepository _repository;
 
@@ -19,9 +14,26 @@ namespace WebApplicationReact.Services
             _repository = repository;
         }
 
-        public async Task<List<UserDetail>> GetUsersAsync()
+        public async Task<ApiResponse<List<UserDetail>>> GetUsersAsync()
         {
-            return await _repository.GetAllAsync();
+            var users = await _repository.GetAllAsync();
+
+            if (users == null || users.Count == 0)
+            {
+                return new ApiResponse<List<UserDetail>>
+                {
+                    Success = false,
+                    Message = "No users found",
+                    Data = null
+                };
+            }
+
+            return new ApiResponse<List<UserDetail>>
+            {
+                Success = true,
+                Message = "Users retrieved successfully",
+                Data = users
+            };
         }
     }
 }

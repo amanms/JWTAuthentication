@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using WebApplicationReact.Helpers;
+﻿using Microsoft.AspNetCore.Mvc;
 using WebApplicationReact.Models.DTOs;
+using WebApplicationReact.Models.Responses;
 using WebApplicationReact.Services.Interfaces;
 
 namespace WebApplicationReact.Controllers
@@ -13,80 +12,57 @@ namespace WebApplicationReact.Controllers
         private readonly IAuthService _authService = authService;
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterRequest request)
+        public async Task<ActionResult<ApiResponse<object>>> Register(RegisterRequest request)
         {
-            try
-            {
-                await _authService.RegisterAsync(request);
+            var result = await _authService.RegisterAsync(request);
 
-                return StatusCode(201, new
-                {
-                    success = true,
-                    message = "User registered successfully"
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = ex.Message
-                });
-            }
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginRequest request)
+        public async Task<ActionResult<ApiResponse<object>>> Login(LoginRequest request)
         {
-            try
-            {
-                var response = await _authService.LoginAsync(request);
+            var result = await _authService.LoginAsync(request);
 
-                Response.Cookies.Append("jwtToken", response.Token, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
-                    Expires = DateTime.UtcNow.AddHours(1)
-                });
-                return Ok(new { role = response.Role });
-            }
-            catch (Exception ex)
+            if (!result.Success)
+                return Unauthorized(result);
+
+            Response.Cookies.Append("jwtToken", result.Data.Token, new CookieOptions
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = ex.Message
-                });
-            }
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddHours(1)
+            });
+
+            var response = new ApiResponse<object>
+            {
+                Success = true,
+                Message = result.Message,
+                Data = new { role = result.Data.Role }
+            };
+
+            return Ok(response);
         }
 
         [HttpPost("logout")]
-        public IActionResult Logout()
+        public ActionResult<ApiResponse<object>> Logout()
         {
-            try
+            Response.Cookies.Delete("jwtToken", new CookieOptions
             {
-                Response.Cookies.Delete("jwtToken", new CookieOptions
-                {
-                    Secure = true,
-                    SameSite = SameSiteMode.None
-                });
+                Secure = true,
+                SameSite = SameSiteMode.None
+            });
 
-                return Ok(new
-                {
-                    message = "Logged out successfully"
-                });
-            }
-            catch (Exception ex)
+            return Ok(new ApiResponse<object>
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = ex.Message
-                });
-            }
-
+                Success = true,
+                Message = "Logged out successfully",
+                Data = null
+            });
         }
-
     }
 }
