@@ -1,4 +1,4 @@
-using WebApplicationReact.Models.DTOs;
+﻿using WebApplicationReact.Models.DTOs;
 using WebApplicationReact.Models.Responses;
 using WebApplicationReact.Repositories.Interfaces;
 using WebApplicationReact.Services.Interfaces;
@@ -22,6 +22,7 @@ namespace WebApplicationReact.Services
             if (pageSize <= 0)
                 pageSize = 10;
 
+            // Prevent very large requests
             pageSize = Math.Min(pageSize, 50);
 
             var users = await _repository.GetUsersAsync(pageNumber, pageSize);

@@ -16,6 +16,7 @@ using WebApplicationReact.Services.Interfaces;
 using WebApplicationReact.Validators;
 using Serilog;
 using Serilog.Events;
+using Scalar.AspNetCore;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -46,8 +47,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -61,21 +62,6 @@ builder.Services.AddAuthentication("Bearer")
 
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
-        };
-
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                var token = context.Request.Cookies["jwtToken"] ?? context.Request.Headers.Authorization.FirstOrDefault()?.Split(" ").Last();
-
-                if (!string.IsNullOrEmpty(token))
-                {
-                    context.Token = token;
-                }
-
-                return Task.CompletedTask;
-            }
         };
     });
 
@@ -112,7 +98,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins("http://localhost:5173","http://localhost:5174")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -124,6 +110,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();
@@ -133,7 +120,7 @@ app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseAuthentication();   
 app.UseAuthorization();
-
+app.UseStaticFiles();
 app.MapControllers();
 
 app.Run();

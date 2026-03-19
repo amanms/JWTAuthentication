@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using WebApplicationReact.Models.DTOs;
 using WebApplicationReact.Models.Responses;
 using WebApplicationReact.Services.Interfaces;
@@ -12,7 +13,7 @@ namespace WebApplicationReact.Controllers
         private readonly IAuthService _authService = authService;
 
         [HttpPost("register")]
-        public async Task<ActionResult<ApiResponse<object>>> Register(RegisterRequest request)
+        public async Task<ActionResult<ApiResponse<object>>> Register([FromForm] RegisterRequest request)
         {
             var result = await _authService.RegisterAsync(request);
 
@@ -30,38 +31,60 @@ namespace WebApplicationReact.Controllers
             if (!result.Success)
                 return Unauthorized(result);
 
-            Response.Cookies.Append("jwtToken", result.Data.Token, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Expires = DateTime.UtcNow.AddHours(1)
-            });
-
-            var response = new ApiResponse<object>
+            return Ok(new ApiResponse<object>
             {
                 Success = true,
                 Message = result.Message,
-                Data = new { role = result.Data.Role }
-            };
-
-            return Ok(response);
+                Data = new
+                {
+                    token = result.Data.Token,
+                    refreshToken = result.Data.RefreshToken,
+                    role = result.Data.Role
+                }
+            });
         }
 
         [HttpPost("logout")]
-        public ActionResult<ApiResponse<object>> Logout()
+        public async Task<ActionResult<ApiResponse<object>>> Logout([FromHeader(Name = "x-refresh-token")] string refreshToken)
         {
-            Response.Cookies.Delete("jwtToken", new CookieOptions
+            
+            if (!string.IsNullOrEmpty(refreshToken))
             {
-                Secure = true,
-                SameSite = SameSiteMode.None
-            });
+                await _authService.RevokeTokenAsync(refreshToken);
+            }
 
             return Ok(new ApiResponse<object>
             {
                 Success = true,
                 Message = "Logged out successfully",
                 Data = null
+            });
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> RefreshToken([FromHeader(Name = "x-refresh-token")] string refreshToken)
+        {
+            if (string.IsNullOrEmpty(refreshToken))
+                return BadRequest(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Refresh token is missing"
+                });
+
+            var result = await _authService.RefreshTokenAsync(refreshToken);
+
+            if (!result.Success)
+                return Unauthorized(result);
+
+            return Ok(new ApiResponse<object>
+            {
+                Success = true,
+                Message = result.Message,
+                Data = new
+                {
+                    token = result.Data.Token,
+                    refreshToken = result.Data.RefreshToken
+                }
             });
         }
     }

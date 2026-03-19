@@ -9,5 +9,7 @@
         required
         public string Password { get; set; }
         public string? Role { get; set; }
+
+        public IFormFile? Image { get; set; }
     }
 }

@@ -23,6 +23,7 @@ namespace WebApplicationReact.Services
         public async Task<ApiResponse<object>> RegisterAsync(RegisterRequest request)
         {
             var existingUser = await _repository.GetByEmailAsync(request.Email);
+            string? fileName = null;
 
             if (existingUser != null)
             {
@@ -34,6 +35,21 @@ namespace WebApplicationReact.Services
                 };
             }
 
+            if (request.Image != null)
+            {
+                fileName = Guid.NewGuid() + Path.GetExtension(request.Image.FileName);
+                var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+
+                if (!Directory.Exists(folderPath))
+                    Directory.CreateDirectory(folderPath);
+                var filePath = Path.Combine(folderPath, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await request.Image.CopyToAsync(stream);
+                }
+            }
+
             CreatePasswordHash(request.Password, out string hash, out string salt);
 
             var user = new User
@@ -42,7 +58,8 @@ namespace WebApplicationReact.Services
                 UserEmail = request.Email,
                 PasswordHash = hash,
                 PasswordSalt = salt,
-                UserRole = request.Role ?? "User"
+                UserRole = request.Role ?? "User",
+                ImageUrl = fileName != null ? "images/" + fileName : null
             };
 
             await _repository.AddAsync(user);
@@ -86,6 +103,12 @@ namespace WebApplicationReact.Services
             }
 
             var token = _jwt.GenerateToken(user);
+            var refreshToken = GenerateRefreshToken();
+
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(1);
+
+            await _repository.UpdateAsync(user);
 
             return new ApiResponse<AuthResponse>
             {
@@ -94,9 +117,58 @@ namespace WebApplicationReact.Services
                 Data = new AuthResponse
                 {
                     Token = token,
+                    RefreshToken = refreshToken,
                     Role = user.UserRole
                 }
             };
+        }
+
+        public async Task<ApiResponse<AuthResponse>> RefreshTokenAsync(string refreshToken)
+        {
+            var user = await _repository.GetByRefreshTokenAsync(refreshToken);
+
+            if (user == null || user.RefreshTokenExpiryTime < DateTime.UtcNow)
+            {
+                return new ApiResponse<AuthResponse>
+                {
+                    Success = false,
+                    Message = "Invalid or expired refresh token"
+                };
+            }
+
+            var newAccessToken = _jwt.GenerateToken(user);
+
+            var newRefreshToken = GenerateRefreshToken();
+
+            user.RefreshToken = newRefreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(1);
+
+            await _repository.UpdateAsync(user);
+
+            return new ApiResponse<AuthResponse>
+            {
+                Success = true,
+                Data = new AuthResponse
+                {
+                    Token = newAccessToken,
+                    RefreshToken = newRefreshToken,
+                    Role = user.UserRole
+                }
+            };
+        }
+
+
+
+        public async Task RevokeTokenAsync(string refreshToken)
+        {
+            var user = await _repository.GetByRefreshTokenAsync(refreshToken);
+
+            if (user == null) return;
+
+            user.RefreshToken = null;
+            user.RefreshTokenExpiryTime = null;
+
+            await _repository.UpdateAsync(user);
         }
 
         private void CreatePasswordHash(string password, out string passwordHash, out string passwordSalt)
@@ -120,6 +192,14 @@ namespace WebApplicationReact.Services
             string computedHashString = Convert.ToBase64String(computedHash);
 
             return computedHashString == storedHash;
+        }
+
+        private string GenerateRefreshToken()
+        {
+            var bytes = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(bytes);
+            return Convert.ToBase64String(bytes);
         }
     }
 }

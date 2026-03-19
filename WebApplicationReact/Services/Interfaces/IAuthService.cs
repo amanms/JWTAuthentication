@@ -6,6 +6,8 @@ namespace WebApplicationReact.Services.Interfaces
     {
         Task<ApiResponse<object>> RegisterAsync(RegisterRequest request);
         Task<ApiResponse<AuthResponse>> LoginAsync(LoginRequest request);
+        Task<ApiResponse<AuthResponse>> RefreshTokenAsync(string refreshToken);
+        Task RevokeTokenAsync(string refreshToken);
     }
 
 }
