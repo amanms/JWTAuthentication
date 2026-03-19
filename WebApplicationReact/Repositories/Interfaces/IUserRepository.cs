@@ -10,5 +10,7 @@ namespace WebApplicationReact.Repositories.Interfaces
         Task AddAsync(User user);
 
         Task<List<UserDetail>> GetUsersAsync(int pageNumber, int pageSize);
+        Task<User?> GetByRefreshTokenAsync(string refreshToken);
+        Task UpdateAsync(User user);
     }
 }
